@@ -66,12 +66,13 @@ public class ToDoList extends Application {
         String title = titleInput.getText().trim();
         String description = descriptionInput.getText().trim();
         if (!title.isEmpty() && !description.isEmpty()) {
-            String insertSQL = "INSERT INTO task(task_title, task_description) VALUES(?, ?)";
+            String insertSQL = "insert into task(task_title, task_description) values(?, ?)";
             try (Connection conn = DriverManager.getConnection(url, user, password);
                  PreparedStatement ps = conn.prepareStatement(insertSQL)) {
                 ps.setString(1, title);
                 ps.setString(2, description);
                 ps.executeUpdate();
+                System.out.println("Task added: " + title + " " + description);
                 titleInput.clear();
                 descriptionInput.clear();
             } catch (SQLException e) {
@@ -82,30 +83,53 @@ public class ToDoList extends Application {
 
     private void viewTasks(Stage primaryStage) {
         ObservableList<String> tasks = FXCollections.observableArrayList();
-        String selectSQL = "select task_title, task_description from task";
+        String selectSQL = "select task_id, task_title, task_description from task";
         try (Connection conn = DriverManager.getConnection(url, user, password);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(selectSQL)) {
             while (rs.next()) {
+                int id = rs.getInt("task_id");
                 String title = rs.getString("task_title");
                 String description = rs.getString("task_description");
-                tasks.add(title + ": " + description);
+                tasks.add(id + ": " + title + ": " + description);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         ListView<String> taskListView = new ListView<>(tasks);
+        taskListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+        Button deleteButton = new Button("Delete Task");
+        deleteButton.setOnAction(e -> {
+            String selectedItem = taskListView.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) {
+                int id = Integer.parseInt(selectedItem.split(":")[0]);
+                deleteTask(id);
+                tasks.remove(selectedItem);
+            }
+        });
 
         Button back2 = new Button("Back");
         back2.setOnAction(e -> primaryStage.setScene(welcomeScene));
 
-        VBox viewTasksLayout = new VBox(10, new Label("Tasks:"), taskListView, back2);
+        VBox viewTasksLayout = new VBox(10, new Label("Tasks:"), taskListView, deleteButton, back2);
         viewTasksScene.setRoot(viewTasksLayout);
+    }
+
+    private void deleteTask(int id) {
+        String deleteSQL = "delete from task where task_id = ?";
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = conn.prepareStatement(deleteSQL)) {
+            ps.setInt(1, id);
+            System.out.println("Task :" + id + " deleted");
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
         launch(args);
     }
-
 }
