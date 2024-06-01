@@ -83,7 +83,7 @@ public class ToDoList extends Application {
 
     private void viewTasks(Stage primaryStage) {
         ObservableList<String> tasks = FXCollections.observableArrayList();
-        String selectSQL = "select task_id, task_title, task_description from task";
+        String selectSQL = "select task_id, task_title, task_description, completed from task";
         try (Connection conn = DriverManager.getConnection(url, user, password);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(selectSQL)) {
@@ -91,7 +91,12 @@ public class ToDoList extends Application {
                 int id = rs.getInt("task_id");
                 String title = rs.getString("task_title");
                 String description = rs.getString("task_description");
-                tasks.add(id + ": " + title + ": " + description);
+                boolean completed = rs.getBoolean("completed");
+                String taskDisplay = id + ": " + title + ": " + description;
+                if (completed) {
+                    taskDisplay += " Is Completed";
+                }
+                tasks.add(taskDisplay);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -110,10 +115,20 @@ public class ToDoList extends Application {
             }
         });
 
+        Button completeButton = new Button("Mark as Completed");
+        completeButton.setOnAction(e -> {
+            String selectedItem = taskListView.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) {
+                int id = Integer.parseInt(selectedItem.split(":")[0]);
+                markTaskAsCompleted(id);
+                viewTasks(primaryStage);
+            }
+        });
+
         Button back2 = new Button("Back");
         back2.setOnAction(e -> primaryStage.setScene(welcomeScene));
 
-        VBox viewTasksLayout = new VBox(10, new Label("Tasks:"), taskListView, deleteButton, back2);
+        VBox viewTasksLayout = new VBox(10, new Label("Tasks:"), taskListView, deleteButton, completeButton, back2);
         viewTasksScene.setRoot(viewTasksLayout);
     }
 
@@ -124,6 +139,19 @@ public class ToDoList extends Application {
             ps.setInt(1, id);
             System.out.println("Task :" + id + " deleted");
             ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void markTaskAsCompleted(int id) {
+        String updateSQL = "update task set completed = ? where task_id = ?";
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = conn.prepareStatement(updateSQL)) {
+            ps.setBoolean(1, true);
+            ps.setInt(2, id);
+            ps.executeUpdate();
+            System.out.println("Task :" + id + " is completed");
         } catch (SQLException e) {
             e.printStackTrace();
         }
