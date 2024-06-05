@@ -124,9 +124,13 @@ public class ToDoList extends Application {
         deleteButton.setOnAction(e -> {
             String selectedItem = taskListView.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
-                int id = Integer.parseInt(selectedItem.split(":")[0]);
-                deleteTask(id);
-                tasks.remove(selectedItem);
+                try {
+                    int id = Integer.parseInt(selectedItem.split("\\.")[0].trim());
+                    deleteTask(id);
+                    tasks.remove(selectedItem);
+                } catch (NumberFormatException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
         styleButton(deleteButton);
@@ -135,9 +139,13 @@ public class ToDoList extends Application {
         completeButton.setOnAction(e -> {
             String selectedItem = taskListView.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
-                int id = Integer.parseInt(selectedItem.split(":")[0]);
-                markTaskAsCompleted(id);
-                viewTasks(primaryStage);
+                try {
+                    int id = Integer.parseInt(selectedItem.split("\\.")[0].trim());
+                    markTaskAsCompleted(id);
+                    viewTasks(primaryStage);
+                } catch (NumberFormatException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
         styleButton(completeButton);
